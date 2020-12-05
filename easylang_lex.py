@@ -165,12 +165,12 @@ def lexer_lazy_bytes(filename, text: bytes, *, pos=0, use_bof=True, use_eof=True
     if use_eof:
         yield _Token(pos, lineno, colno, filename, EOF, "")
 
-EOF = 13
-BOF = 12
+EOF = 1
+BOF = 0
 REGEX = '(\\s+)|([a-zA-Z_][a-zA-Z_0-9]*)|("([^\\\\"]+|\\\\.)*?")|([-+]?[0-9]+\\.\\d+([eE][-+]?\\d+)?|[-+]?[0-9]+[eE][-+]?\\d+)|([-+]?[0-9]+)|(\\})|(\\{)|(=>)|(=)|(,)|(\\))|(\\()'
 REGEX_STR = __import__('re').compile(REGEX)
 REGEX_BYTES = __import__('re').compile(REGEX.encode())
 IGNORES = (17,)
-UNIONALL_INFO = ((None, None), (17, None), (5, {'then': 10, 'else': 11, 'fun': 1, 'if': 9}), (16, None), (None, None), (15, None), (None, None), (14, None), (8, None), (7, None), (4, None), (6, None), (0, None), (3, None), (2, None))
-UNIONALL_INFO_BYTES = ((None, None), (17, None), (5, {b'then': 10, b'else': 11, b'fun': 1, b'if': 9}), (16, None), (None, None), (15, None), (None, None), (14, None), (8, None), (7, None), (4, None), (6, None), (0, None), (3, None), (2, None))
-numbering = {'quote ,': 0, 'quote fun': 1, 'quote (': 2, 'quote )': 3, 'quote =>': 4, 'ident': 5, 'quote =': 6, 'quote {': 7, 'quote }': 8, 'quote if': 9, 'quote then': 10, 'quote else': 11, 'BOF': 12, 'EOF': 13, 'int': 14, 'float': 15, 'str': 16, 'space': 17}
+UNIONALL_INFO = ((None, None), (17, None), (7, {'then': 12, 'if': 11, 'fun': 3, 'else': 13}), (16, None), (None, None), (15, None), (None, None), (14, None), (10, None), (9, None), (6, None), (8, None), (2, None), (5, None), (4, None))
+UNIONALL_INFO_BYTES = ((None, None), (17, None), (7, {b'then': 12, b'if': 11, b'fun': 3, b'else': 13}), (16, None), (None, None), (15, None), (None, None), (14, None), (10, None), (9, None), (6, None), (8, None), (2, None), (5, None), (4, None))
+numbering = {'BOF': 0, 'EOF': 1, 'quote ,': 2, 'quote fun': 3, 'quote (': 4, 'quote )': 5, 'quote =>': 6, 'ident': 7, 'quote =': 8, 'quote {': 9, 'quote }': 10, 'quote if': 11, 'quote then': 12, 'quote else': 13, 'int': 14, 'float': 15, 'str': 16, 'space': 17}

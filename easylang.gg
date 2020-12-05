@@ -1,0 +1,82 @@
+%%inline
+from json.decoder import py_scanstring
+
+def unesc(x, f=py_scanstring):
+    """from the raw form of a double quoted string to a python string,
+    e.g.,
+        unesc('"asd"') == "asd"
+    """
+    return f(x, 1)[0]
+
+def call(f, args):
+    def ap(st):
+        return f(st)(*(arg(st) for arg in args))
+    return ap
+
+def mkfunc(params, body):
+    def ap(st):
+        def exp(*args):
+            assert len(args) == len(params)
+            st_ = st.copy()
+            for arg, param in zip(args, params):
+                st_[param] = arg
+            return body(st_)
+        return exp
+    return ap
+def mkassign(n, exp):
+    def ap(st):
+        st[n] = exp(st)
+    return ap
+def mkblock(xs):
+    def ap(st):
+        r = None
+        for x in xs:
+            r = x(st)
+        return r
+    return ap
+
+def const(x):
+    return lambda st: x
+
+def lookup(n):
+    return lambda st: st[n]
+
+def mkif(cond, arm1, arm2):
+    def ap(st):
+        return (arm1 if cond(st) else arm2)(st)
+    return ap
+%%
+
+list[p] : p         { [$1] }
+        | list[p] p { $1.append($2); $1 }
+        ;
+
+seplist[sep, p] : p                     { [$1] }
+                | seplist[sep, p] sep p { $1.append($3); $1 }
+                ;
+
+START : <BOF> list[exp] <EOF> { mkblock($2) };
+
+exp : app { $1 }
+    | 'fun' '(' seplist[',', arg] ')' '=>' exp { mkfunc($3, $6) }
+    | <ident> '=' exp                          { mkassign($1.value, $3) }
+    | '{' list[exp] '}'                        { mkblock($2) }
+    | 'if' exp 'then' exp 'else' exp           { mkif($2, $4, $6) }
+    | '{' '}'                                  { const(None) }
+    ;
+
+arg : <ident> { $1.value };
+
+
+
+app : atomexpr { $1 }
+    | app '(' seplist[',', exp] ')' { call($1, $3) } # f(a, b, c)
+    | app '(' ')'                   { call($1, ()) }
+    ;
+
+atomexpr : <int>       { const(int($1.value)) }
+         | <float>     { const(float($1.value)) }
+         | <str>       { const(unesc($1.value)) }
+         | '(' exp ')' { $2 }
+         | <ident>     {  lookup($1.value) }
+         ;

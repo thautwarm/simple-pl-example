@@ -1,3 +1,10 @@
+# if x then
+#    x + 1
+# else
+#    x + 2
+
+# object = ((string, value) map -> value)
+
 list[p] : p         { [$1] }
         | list[p] p { $1.append($2); $1 }
         ;
@@ -8,8 +15,14 @@ seplist[sep, p] : p                     { [$1] }
 
 START : <BOF> list[exp] <EOF> { mkblock($2) };
 
-exp : app { $1 }
-    | 'fun' '(' seplist[',', arg] ')' '=>' exp { mkfunc($3, $6) }
+args : '(' seplist[',', arg] ')' { $2 }
+     | '(' ')'  { [] }
+     ;
+
+
+# top level expression
+exp : app
+    | 'fun' args '=>' exp                      { mkfunc($2, $4) }
     | <ident> '=' exp                          { mkassign($1.value, $3) }
     | '{' list[exp] '}'                        { mkblock($2) }
     | 'if' exp 'then' exp 'else' exp           { mkif($2, $4, $6) }
@@ -18,9 +31,7 @@ exp : app { $1 }
 
 arg : <ident> { $1.value };
 
-
-
-app : atomexpr { $1 }
+app : atomexpr                      { $1 }
     | app '(' seplist[',', exp] ')' { call($1, $3) } # f(a, b, c)
     | app '(' ')'                   { call($1, ()) }
     ;
@@ -28,8 +39,8 @@ app : atomexpr { $1 }
 atomexpr : <int>       { const(int($1.value)) }
          | <float>     { const(float($1.value)) }
          | <str>       { const(unesc($1.value)) }
+         | <ident>     { lookup($1.value) }
          | '(' exp ')' { $2 }
-         | <ident>     {  lookup($1.value) }
          ;
 
 
@@ -45,23 +56,27 @@ def unesc(x, f=py_scanstring):
 
 def call(f, args):
     def ap(st):
-        return f(st)(*(arg(st) for arg in args))
+        f_val = f(st)
+        arg_vals = [arg(st) for arg in args]
+        return f_val(*arg_vals)
     return ap
 
 def mkfunc(params, body):
     def ap(st):
-        def exp(*args):
+        def obj(*args):
             assert len(args) == len(params)
             st_ = st.copy()
             for arg, param in zip(args, params):
                 st_[param] = arg
             return body(st_)
-        return exp
+        return obj
     return ap
+
 def mkassign(n, exp):
     def ap(st):
         st[n] = exp(st)
     return ap
+
 def mkblock(xs):
     def ap(st):
         r = None
@@ -74,6 +89,7 @@ def const(x):
     return lambda st: x
 
 def lookup(n):
+    # fun st -> Map.lookup n st
     return lambda st: st[n]
 
 def mkif(cond, arm1, arm2):

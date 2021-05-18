@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings('ignore', category=SyntaxWarning, message='"is" with a literal')
+
 from easylang_lex import lexer
 from easylang_parser import *
 
@@ -29,23 +32,36 @@ def parse(text: str, filename: str = "unknown"):
     e.lineno = lineno
     e.colno = colno
     e.filename = filename
-    e.text = text[offset - colno:text.find('\n', offset)]
+    e.text = text[offset - colno : text.find("\n", offset)]
     e.offset = colno
     raise e
 
-exp = parse("""
-print(add(1, 2))
-k = fun (x, y, z) =>
-    {
-        if gt(x,  y)
-        then add(z, 1)
-        else add(z, -1)
-    }
 
-print(k(1, 2, 3))
-print(k(2, 1, 3))
-""", "<unknown file>")
+# exp = parse(
+#     """
+# print(add(1, 2))
+# k = fun (x, y, z) =>
+#     {
+#         if gt(x,  y)
+#         then add(z, 1)
+#         else add(z, -1)
+#     }
+#
+# print(k(1, 2, 3))
+# print(k(2, 1, 3))
+# """,
+#     "<unknown file>",
+# )
 
 import operator
-ctx = {'add': operator.add, 'print': print, 'gt': operator.gt}
-exp(ctx)
+
+ctx = {"+": operator.add, "print": print, ">": operator.gt}
+
+while True:
+    try:
+        source_code = input("simple> ")
+        filename = "<repl>"
+        obj = parse(source_code, filename)
+        print(obj(ctx))
+    except Exception as e:
+        print(type(e), e)
